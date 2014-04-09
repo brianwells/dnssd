@@ -297,6 +297,38 @@ dnssd_service_add_record(VALUE self, VALUE _flags, VALUE _rrtype, VALUE _rdata,
   return _record;
 }
 
+static VALUE
+dnssd_service_update_record(VALUE self, VALUE _record, VALUE _flags, VALUE _rdata, VALUE _ttl) {
+
+  DNSServiceRef *client;
+  DNSRecordRef primaryRec = NULL;
+  DNSRecordRef *record;
+  DNSServiceFlags flags;
+  DNSServiceErrorType e;
+  uint16_t rdlen;
+  const void *rdata;
+  uint32_t ttl;
+
+  _rdata = rb_str_to_str(_rdata);
+  flags = (DNSServiceFlags)NUM2ULONG(_flags);
+  rdlen = RSTRING_LEN(_rdata);
+  rdata = (void *)RSTRING_PTR(_rdata);
+  ttl = (uint32_t)NUM2ULONG(_ttl);
+
+  if (!NIL_P(_record)) {
+    get(cDNSSDRecord, _record, DNSRecordRef, record);
+  } else {
+    record = &primaryRec;
+  }
+  get(cDNSSDService, self, DNSServiceRef, client);
+
+  e = DNSServiceUpdateRecord(*client, *record, flags, rdlen, rdata, ttl);
+
+  dnssd_check_error_code(e);
+
+  return self;
+}
+
 static void DNSSD_API
 dnssd_service_browse_reply(DNSServiceRef client, DNSServiceFlags flags,
     uint32_t interface, DNSServiceErrorType e, const char *name,
@@ -746,6 +778,7 @@ Init_DNSSD_Service(void) {
   rb_define_method(cDNSSDService, "stopped?", dnssd_service_stopped_p, 0);
 
   rb_define_method(cDNSSDService, "_add_record", dnssd_service_add_record, 4);
+  rb_define_method(cDNSSDService, "_update_record", dnssd_service_update_record, 4);
   rb_define_method(cDNSSDService, "_browse", dnssd_service_browse, 4);
   rb_define_method(cDNSSDService, "_enumerate_domains", dnssd_service_enumerate_domains, 2);
 #ifdef HAVE_DNSSERVICEGETADDRINFO

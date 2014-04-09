@@ -39,6 +39,12 @@ class DNSSD::Service
     _add_record flags.to_i, type, data, ttl
   end
 
+  def update_record(record, data, ttl = 0, flags = 0)
+    raise TypeError, 'must be called after register' unless @type == :register
+
+    _update_record record, flags.to_i, data, ttl
+  end
+
   ##
   # Browse for services.
   #
